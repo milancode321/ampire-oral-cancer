@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Oral Cancer Detection Portal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-[#F9FAFB] text-gray-800 font-sans">
+
+  <header class="bg-white shadow p-6 sticky top-0 z-50">
+    <div class="flex justify-between items-center">
+      <!-- Left Section -->
+      <div>
+        <h1 class="text-2xl font-semibold">🩺 Oral Cancer Detection</h1>
+        <p class="text-sm text-gray-500">Upload patient’s inner mouth image for AI-based prediction.</p>
+      </div>
+  
+      <!-- Right Section: Logout -->
+      <a href="{{ url_for('logout') }}"
+         class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition text-sm font-medium shadow">
+        Logout
+      </a>
+    </div>
+  </header>
+  
+  
+  </header>
+
+
+
+  <!-- Main Content -->
+  <main class="p-6 grid grid-cols-1 md:grid-cols-2 gap-8 max-w-6xl mx-auto">
+
+    <!-- Upload Section -->
+    <section class="bg-white border border-gray-200 p-6 rounded-xl shadow-sm">
+      <h2 class="text-lg font-medium mb-4">Upload Image</h2>
+      <input type="file" accept="image/*" id="imageInput" class="w-full p-2 border border-gray-300 rounded" />
+      <button onclick="uploadAndPredict()" class="mt-4 w-full bg-black text-white py-2 rounded hover:bg-gray-900 transition">Detect</button>
+      <p class="mt-3 text-sm text-gray-500">Only inner mouth images are accepted (JPG/PNG).</p>
+    </section>
+
+    <!-- Result Section -->
+    <section class="bg-white border border-gray-200 p-6 rounded-xl shadow-sm text-center">
+      <h2 class="text-lg font-medium mb-4">Result</h2>
+
+      <div id="previewContainer" class="relative w-full max-w-md aspect-video mx-auto rounded border hidden">
+        <img id="previewImage" src="" alt="Preview" class="w-full h-full object-cover" />
+        <div id="overlay" class="absolute top-0 left-0 w-full h-full pointer-events-none bg-red-500 bg-opacity-20"></div>
+      </div>
+
+      <div id="confidenceSection" class="mt-6 hidden">
+        <p class="text-sm text-gray-600 mb-1">AI Confidence Score:</p>
+        <div class="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
+          <div id="confidenceBar" class="h-4 rounded-full transition-all duration-500 ease-in-out" style="width: 0%"></div>
+        </div>
+        <p id="confidenceText" class="text-sm mt-2 text-gray-600 font-medium"></p>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="text-center p-4 text-xs text-gray-400">
+    &copy; 2025 Oral Cancer AI Project | Built for medical professionals
+  </footer>
+
+  <script>
+    const imageInput = document.getElementById('imageInput');
+    const previewImage = document.getElementById('previewImage');
+    const previewContainer = document.getElementById('previewContainer');
+    const confidenceSection = document.getElementById('confidenceSection');
+    const confidenceBar = document.getElementById('confidenceBar');
+    const confidenceText = document.getElementById('confidenceText');
+
+    function uploadAndPredict() {
+      const file = imageInput.files[0];
+      if (!file) {
+        alert("Please select an image first!");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      // Preview image immediately
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        previewImage.src = e.target.result;
+        previewContainer.classList.remove('hidden');
+      };
+      reader.readAsDataURL(file);
+
+      // Send file to Flask backend
+      fetch('/predict', {
+        method: 'POST',
+        body: formData,
+      })
+      .then(response => response.json())
+      .then(data => {
+        const { label, confidence } = data;
+
+        confidenceBar.style.width = confidence + '%';
+        confidenceText.textContent = `Prediction: ${label} with ${confidence}% confidence`;
+        confidenceSection.classList.remove('hidden');
+
+        // Set color based on confidence
+        if (confidence < 70) {
+          confidenceBar.style.backgroundColor = '#EF4444'; // Red-500
+        } else if (confidence >= 70 && confidence <= 80) {
+          confidenceBar.style.backgroundColor = '#F59E0B'; // Yellow-500
+        } else {
+          confidenceBar.style.backgroundColor = '#10B981'; // Green-500
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+      });
+    }
+  </script>
+
+</body>
+</html>
